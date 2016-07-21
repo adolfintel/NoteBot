@@ -379,13 +379,12 @@ public class Note extends JDialog {
     @Override
     public void setLocation(int x, int y) {
         Dimension s = Toolkit.getDefaultToolkit().getScreenSize();
-        if (x > s.width) {
-            super.setLocation(getLocation().x - (s.width - x), y);
-        } else if (y > s.height) {
-            super.setLocation(x, getLocation().y - (s.width - y));
-        } else {
-            super.setLocation(x, y);
+        if (x+getWidth() > s.width) {
+            x=s.width - getWidth();
+        }if (y+getHeight() > s.height) {
+            y=s.height-getHeight();
         }
+        super.setLocation(x, y);
     }
 
     @Override
