@@ -1,0 +1,6 @@
+*.dat
+*.dat.bak
+lock
+build
+dist
+test
