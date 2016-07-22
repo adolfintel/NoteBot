@@ -1,8 +1,6 @@
 # NoteBot
 NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 
-It is currently in beta, so there may be bugs.
-
 ## Download
 [Installer for Windows](http://downloads.adolfintel.com/geth.php?r=stickynotes-win)
 
