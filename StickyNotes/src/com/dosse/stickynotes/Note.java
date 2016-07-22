@@ -18,6 +18,7 @@ package com.dosse.stickynotes;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Image;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -31,6 +32,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.ResourceBundle;
+import javax.imageio.ImageIO;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -50,10 +55,23 @@ import javax.swing.plaf.FontUIResource;
  */
 public class Note extends JDialog {
 
+    private static final ResourceBundle locBundle = ResourceBundle.getBundle("com/dosse/stickynotes/locale/locale");
+
     /**
-     * SCHEME FORMAT: -external color -line border color -bar color -buttons
-     * color -internal color -text color -selection background color -selected
-     * text color
+     * returns localized string
+     *
+     * @param s key
+     * @return localized String, or null the key doesn't exist
+     */
+    private static String getLocString(String s) {
+        return locBundle.getString(s);
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="Color schemes">
+    /**
+     * SCHEME FORMAT: {external color, line border color, bar color, buttons
+     * color, internal color, text color, selection background color, selected
+     * text color}
      */
     private static final Color[] YELLOW_SCHEME = new Color[]{
         new Color(248, 248, 182),
@@ -127,12 +145,23 @@ public class Note extends JDialog {
     };
 
     private static final Color[] DEFAULT_SCHEME = YELLOW_SCHEME;
+    //</editor-fold>
 
-    private void setClipboard(String s) {
+    /**
+     * copy a string to the system clipboard
+     *
+     * @param s string
+     */
+    private static void setClipboard(String s) {
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(s), null);
     }
 
-    private String getClipboard() {
+    /**
+     * read contents of system clipboard
+     *
+     * @return clipboard contents
+     */
+    private static String getClipboard() {
         try {
             Transferable contents = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
             return (String) contents.getTransferData(DataFlavor.stringFlavor);
@@ -141,62 +170,102 @@ public class Note extends JDialog {
         }
     }
 
-    private JPopupMenu copyPasteMenu, colorMenu;
-    private JMenuItem cut, copy, paste, delete, selectAll;
-    private int mouseDragStartX, mouseDragStartY;
+    /**
+     * load image from classpath (it will be the jar file)
+     *
+     * @param pathInClasspath path in classpath
+     * @return the image, or an empty image if something went wrong
+     */
+    public static final Image loadImage(String pathInClasspath) {
+        try {
+            return ImageIO.read(Note.class.getResource(pathInClasspath));
+        } catch (IOException ex) {
+            BufferedImage i = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+            i.setRGB(0, 0, 0);
+            return i;
+        }
+    }
+
+    //UI Elements
+    private JPanel wrapper1; //outer wrapper: it's the area that the user can use to resize the window
+    private JPanel wrapper2; //inner wrapper: it contains the buttons and the actual note; the empty space can be dragged to move the note
+    private int mouseDragStartX, mouseDragStartY; //used for dragging
+    private JButton deleteNote, newNote; //buttons to delete and create notes
+    private JScrollPane jScrollPane1; //container for the text. provides the scrollbar
+    private JTextArea text; //the actual note
+    private JPopupMenu copyPasteMenu, //menu shown when the textarea is right-clicked
+            colorMenu; //menu shown when the top is right-clicked
+    private JMenuItem cut, copy, paste, delete, selectAll; //menu items inside copyPasteMenu
 
     /**
-     * Creates new form Note
+     * Creates new form Note.
+     *
+     * A note is initialized empty, with a yellow background and at current
+     * mouse coordinates.
      */
     public Note() {
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE); //if alt+f4 is pressed, this will cause the windowClosing event to be fired
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                //if alt+f4 is pressed, save the current state and terminate the app
+                Main.saveState();
+                System.exit(0);
+            }
+        });
+        addWindowFocusListener(new WindowAdapter() {
+            @Override
+            public void windowLostFocus(WindowEvent e) {
+                //if focus is lost, save the current state
+                Main.saveState();
+            }
+        });
+        setTitle(getLocString("APPNAME")); //set window title
+        setIconImage(loadImage("/com/dosse/stickynotes/icon.png")); //set window icon
+        setUndecorated(true); //removes system window border
+
+        //now we will create and initialize all the elements inside the note
         wrapper1 = new JPanel();
         wrapper2 = new JPanel();
         newNote = new JButton();
         deleteNote = new JButton();
         jScrollPane1 = new JScrollPane();
+        //create the text area
         text = new JTextArea() {
             @Override
-            public boolean getScrollableTracksViewportWidth() {
+            public boolean getScrollableTracksViewportWidth() {//configures the textarea to resize properly horizontaly (workaround for swing bug)
                 return true;
             }
         };
+        //enable line wrap
         text.setLineWrap(true);
         text.setWrapStyleWord(true);
+        jScrollPane1.setBorder(null);
+        jScrollPane1.setViewportView(text); //add text area to scrollpane
 
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle(Utils.getLocString("APPNAME"));
-        setBackground(new Color(253, 253, 202));
-        setUndecorated(true);
-
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                Main.saveState();
-                System.exit(0);
-            }
-        });
-
-        wrapper2.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent evt) {
-                setLocation(evt.getXOnScreen() - mouseDragStartX, evt.getYOnScreen() - mouseDragStartY);
-            }
-        });
+        //events used for dragging the note
         wrapper2.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent evt) {
-                if (evt.isPopupTrigger() || evt.getButton() == MouseEvent.BUTTON3) {
-                    colorMenu.show(evt.getComponent(), evt.getX(), evt.getY());
-                }
-            }
-
             @Override
             public void mousePressed(MouseEvent evt) {
                 mouseDragStartX = evt.getXOnScreen() - getX();
                 mouseDragStartY = evt.getYOnScreen() - getY();
             }
         });
+        wrapper2.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent evt) {
+                setLocation(evt.getXOnScreen() - mouseDragStartX, evt.getYOnScreen() - mouseDragStartY);
+            }
+        });
+        //initialize ComponentResizer to make the window resizable
+        ComponentResizer cr = new ComponentResizer();
+        cr.registerComponent(this);
+        cr.setSnapSize(new Dimension(1, 1)); //no snap
+        cr.setMinimumSize(new Dimension((int) (160 * Main.SCALE), (int) (90 * Main.SCALE))); //min size is 160x90 @80dpi
+        setSize((int) (190 * Main.SCALE), (int) (170 * Main.SCALE)); //default size is 190x170 @80dpi
+        setLocation(MouseInfo.getPointerInfo().getLocation()); //new note is placed at current mouse coordinates
 
+        //new note button
         newNote.setFont(new FontUIResource(Main.BUTTON_FONT));
         newNote.setText("+");
         newNote.setBorderPainted(false);
@@ -209,6 +278,7 @@ public class Note extends JDialog {
             }
         });
 
+        //delete note button
         deleteNote.setFont(new FontUIResource(Main.BUTTON_FONT));
         deleteNote.setText("X");
         deleteNote.setBorderPainted(false);
@@ -220,59 +290,38 @@ public class Note extends JDialog {
             }
         });
 
-        jScrollPane1.setBorder(null);
-
+        //right click on the note
         text.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                if (evt.isPopupTrigger() || evt.getButton() == MouseEvent.BUTTON3) {
-                    if (text.getSelectionStart() == text.getSelectionEnd()) {
+                if (evt.isPopupTrigger() || evt.getButton() == MouseEvent.BUTTON3) { //isPopupTrigger does not work on windows. workaround is to listen for BUTTON3 instead (right mouse button)
+                    if (text.getSelectionStart() == text.getSelectionEnd()) { //if there is no text selected, disable cut, copy and delete
                         cut.setEnabled(false);
                         copy.setEnabled(false);
                         delete.setEnabled(false);
-                    } else {
+                    } else { //otherwise, enable them
                         cut.setEnabled(true);
                         copy.setEnabled(true);
                         delete.setEnabled(true);
                     }
-                    paste.setEnabled(getClipboard() != null);
-                    copyPasteMenu.show(evt.getComponent(), evt.getX(), evt.getY());
+                    paste.setEnabled(getClipboard() != null); //paste is only enabled if there's something in the clipboard
+                    copyPasteMenu.show(evt.getComponent(), evt.getX(), evt.getY()); //show the menu at current mouse location
                 }
             }
         });
-        jScrollPane1.setViewportView(text);
 
-        GroupLayout wrapper2Layout = new GroupLayout(wrapper2);
-        wrapper2.setLayout(wrapper2Layout);
-        wrapper2Layout.setHorizontalGroup(wrapper2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(wrapper2Layout.createSequentialGroup().addComponent(newNote).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 134, Short.MAX_VALUE).addComponent(deleteNote)).addComponent(jScrollPane1, GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE));
-        wrapper2Layout.setVerticalGroup(wrapper2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.TRAILING, wrapper2Layout.createSequentialGroup().addGap(0, 0, 0).addGroup(wrapper2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(deleteNote, GroupLayout.PREFERRED_SIZE, (int) (19 * Main.SCALE * 0.85f), GroupLayout.PREFERRED_SIZE).addComponent(newNote, GroupLayout.PREFERRED_SIZE, (int) (19 * Main.SCALE * 0.85f), GroupLayout.PREFERRED_SIZE)).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(jScrollPane1, GroupLayout.DEFAULT_SIZE, 178, Short.MAX_VALUE)));
-
-        GroupLayout wrapper1Layout = new GroupLayout(wrapper1);
-        wrapper1.setLayout(wrapper1Layout);
-        wrapper1Layout.setHorizontalGroup(wrapper1Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.TRAILING, wrapper1Layout.createSequentialGroup().addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f)).addComponent(wrapper2, GroupLayout.DEFAULT_SIZE, 217, Short.MAX_VALUE).addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f))));
-        wrapper1Layout.setVerticalGroup(wrapper1Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(wrapper1Layout.createSequentialGroup().addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f)).addComponent(wrapper2, GroupLayout.DEFAULT_SIZE, 203, Short.MAX_VALUE).addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f))));
-
-        GroupLayout layout = new GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(wrapper1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE));
-        layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(wrapper1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE));
-        
-        pack();
-        setIconImage(Utils.loadUnscaled("/com/dosse/stickynotes/icon.png").getImage());
-        setColorScheme(DEFAULT_SCHEME);
-        ComponentResizer cr = new ComponentResizer();
-        cr.registerComponent(this);
-        cr.setSnapSize(new Dimension(1, 1));
-        cr.setMinimumSize(new Dimension((int) (160 * Main.SCALE), (int) (90 * Main.SCALE)));
-        setSize((int) (190 * Main.SCALE), (int) (170 * Main.SCALE));
-        setLocation(MouseInfo.getPointerInfo().getLocation());
-        addWindowFocusListener(new WindowAdapter() {
+        //right click on top bar
+        wrapper2.addMouseListener(new MouseAdapter() {
             @Override
-            public void windowLostFocus(WindowEvent e) {
-                Main.saveState();
+            public void mouseClicked(MouseEvent evt) {
+                if (evt.isPopupTrigger() || evt.getButton() == MouseEvent.BUTTON3) {
+                    colorMenu.show(evt.getComponent(), evt.getX(), evt.getY()); //show color selection menu
+                }
             }
         });
+
+        //initialize copy-paste menu
         copyPasteMenu = new JPopupMenu();
-        cut = new JMenuItem(Utils.getLocString("CUT"));
+        cut = new JMenuItem(getLocString("CUT"));
         cut.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int from = text.getSelectionStart(), to = text.getSelectionEnd();
@@ -282,13 +331,13 @@ public class Note extends JDialog {
                 text.setCaretPosition(from);
             }
         });
-        copy = new JMenuItem(Utils.getLocString("COPY"));
+        copy = new JMenuItem(getLocString("COPY"));
         copy.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setClipboard(text.getSelectedText());
             }
         });
-        paste = new JMenuItem(Utils.getLocString("PASTE"));
+        paste = new JMenuItem(getLocString("PASTE"));
         paste.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int from = text.getSelectionStart(), to = text.getSelectionEnd();
@@ -301,7 +350,7 @@ public class Note extends JDialog {
                 text.setCaretPosition(from + getClipboard().length());
             }
         });
-        delete = new JMenuItem(Utils.getLocString("DELETE"));
+        delete = new JMenuItem(getLocString("DELETE"));
         delete.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int from = text.getSelectionStart(), to = text.getSelectionEnd();
@@ -310,7 +359,7 @@ public class Note extends JDialog {
                 text.setCaretPosition(from);
             }
         });
-        selectAll = new JMenuItem(Utils.getLocString("SELECTALL"));
+        selectAll = new JMenuItem(getLocString("SELECTALL"));
         selectAll.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 text.setSelectionStart(0);
@@ -324,82 +373,129 @@ public class Note extends JDialog {
         copyPasteMenu.add(new JPopupMenu.Separator());
         copyPasteMenu.add(selectAll);
 
+        //initialize color selection menu (right click on top bar)
         colorMenu = new JPopupMenu();
-        JMenuItem m = new JMenuItem(Utils.getLocString("YELLOW"));
+        JMenuItem m = new JMenuItem(getLocString("YELLOW"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(YELLOW_SCHEME);
             }
         });
         colorMenu.add(m);
-        m = new JMenuItem(Utils.getLocString("BLUE"));
+        m = new JMenuItem(getLocString("BLUE"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(BLUE_SCHEME);
             }
         });
         colorMenu.add(m);
-        m = new JMenuItem(Utils.getLocString("GREEN"));
+        m = new JMenuItem(getLocString("GREEN"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(GREEN_SCHEME);
             }
         });
         colorMenu.add(m);
-        m = new JMenuItem(Utils.getLocString("PINK"));
+        m = new JMenuItem(getLocString("PINK"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(PINK_SCHEME);
             }
         });
         colorMenu.add(m);
-        m = new JMenuItem(Utils.getLocString("PURPLE"));
+        m = new JMenuItem(getLocString("PURPLE"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(PURPLE_SCHEME);
             }
         });
         colorMenu.add(m);
-        m = new JMenuItem(Utils.getLocString("RED"));
+        m = new JMenuItem(getLocString("RED"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(RED_SCHEME);
             }
         });
         colorMenu.add(m);
-        m = new JMenuItem(Utils.getLocString("WHITE"));
+        m = new JMenuItem(getLocString("WHITE"));
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(WHITE_SCHEME);
             }
         });
         colorMenu.add(m);
+
+        //add everything to the layout
+        GroupLayout wrapper2Layout = new GroupLayout(wrapper2);
+        wrapper2.setLayout(wrapper2Layout);
+        wrapper2Layout.setHorizontalGroup(wrapper2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(wrapper2Layout.createSequentialGroup().addComponent(newNote).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 134, Short.MAX_VALUE).addComponent(deleteNote)).addComponent(jScrollPane1, GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE));
+        wrapper2Layout.setVerticalGroup(wrapper2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.TRAILING, wrapper2Layout.createSequentialGroup().addGap(0, 0, 0).addGroup(wrapper2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(deleteNote, GroupLayout.PREFERRED_SIZE, (int) (19 * Main.SCALE * 0.85f), GroupLayout.PREFERRED_SIZE).addComponent(newNote, GroupLayout.PREFERRED_SIZE, (int) (19 * Main.SCALE * 0.85f), GroupLayout.PREFERRED_SIZE)).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(jScrollPane1, GroupLayout.DEFAULT_SIZE, 178, Short.MAX_VALUE)));
+        GroupLayout wrapper1Layout = new GroupLayout(wrapper1);
+        wrapper1.setLayout(wrapper1Layout);
+        wrapper1Layout.setHorizontalGroup(wrapper1Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.TRAILING, wrapper1Layout.createSequentialGroup().addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f)).addComponent(wrapper2, GroupLayout.DEFAULT_SIZE, 217, Short.MAX_VALUE).addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f))));
+        wrapper1Layout.setVerticalGroup(wrapper1Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(wrapper1Layout.createSequentialGroup().addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f)).addComponent(wrapper2, GroupLayout.DEFAULT_SIZE, 203, Short.MAX_VALUE).addGap((int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f), (int) (6 * Main.SCALE * 0.85f))));
+        GroupLayout layout = new GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(wrapper1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE));
+        layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(wrapper1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE));
+        pack(); //fuck my shit up fam
+
+        setColorScheme(DEFAULT_SCHEME); //set default color scheme (yellow)
+
+        //and we're done
     }
 
+    /**
+     * setLocation method is overridden to force the note to stay on the screen
+     *
+     * @param x new x location
+     * @param y new y location
+     */
     @Override
     public void setLocation(int x, int y) {
         Dimension s = Toolkit.getDefaultToolkit().getScreenSize();
-        if (x+getWidth() > s.width) {
-            x=s.width - getWidth();
-        }if (y+getHeight() > s.height) {
-            y=s.height-getHeight();
+        if (x + getWidth() > s.width) {
+            x = s.width - getWidth();
+        }
+        if (y + getHeight() > s.height) {
+            y = s.height - getHeight();
         }
         super.setLocation(x, y);
     }
 
+    /**
+     * setLocation method is overridden to force the note to stay on the screen
+     *
+     * @param p new location
+     */
     @Override
     public void setLocation(Point p) {
         setLocation(p.x, p.y);
     }
 
+    /**
+     * get text currently inside the note
+     *
+     * @return
+     */
     public String getText() {
         return text.getText();
     }
 
+    /**
+     * set text currently inside the note
+     *
+     * @param s
+     */
     public void setText(String s) {
         text.setText(s);
     }
 
+    /**
+     * get current color scheme
+     *
+     * @return current color scheme (see format at the beginning of this file)
+     */
     public Color[] getColorScheme() {
         Color[] ret = new Color[8];
         ret[0] = wrapper1.getBackground();
@@ -413,6 +509,11 @@ public class Note extends JDialog {
         return ret;
     }
 
+    /**
+     * set color scheme
+     *
+     * @param c color scheme (see format at the beginning of this file)
+     */
     public void setColorScheme(Color[] c) {
         wrapper1.setBackground(c[0]);
         wrapper1.setBorder(new LineBorder(c[1]));
@@ -424,12 +525,5 @@ public class Note extends JDialog {
         text.setSelectionColor(c[6]);
         text.setSelectedTextColor(c[7]);
     }
-
-    private JButton deleteNote;
-    private JScrollPane jScrollPane1;
-    private JButton newNote;
-    private JTextArea text;
-    private JPanel wrapper1;
-    private JPanel wrapper2;
 
 }

@@ -38,26 +38,27 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.metal.MetalTheme;
 
 /**
- *
+ * This class coordinates all the notes. It contains code to load, save, create, delete. It also performs autosaving and initializes the UI.
  * @author Federico
  */
 public class Main {
 
-    private static final String STORAGE_PATH, BACKUP_PATH, LOCK_PATH;
+    private static final String STORAGE_PATH, BACKUP_PATH, LOCK_PATH; //these variables will contain the paths to the files used by the application, initialized below
 
     static {
         String os = System.getProperty("os.name").toLowerCase();
         String home = "";
         try {
             if (os.startsWith("win")) {
-                if (os.contains("xp")) {
+                if (os.contains("xp")) { //on windows xp, we use %appdata%\NoteBot
                     home = System.getenv("APPDATA") + "\\NoteBot\\";
-                } else {
+                } else { //on newer windows, we use %userprofile%\AppData\Local\NoteBot
                     home = System.getProperty("user.home") + "\\AppData\\Local\\NoteBot\\";
                 }
-            } else {
+            } else { //on other systems, we use ~/.notebot
                 home = System.getProperty("user.home") + "/.notebot/";
             }
+            //check if the folder exists: if it doesn't exist, create it; if a file already exists with that name, use fallback paths
             File f = new File(home);
             if (f.exists()) {
                 if (!f.isDirectory()) {
@@ -69,18 +70,23 @@ public class Main {
             }
 
         } catch (Throwable t) {
-            System.out.println(t);
+            //fallback path, local folder and hope for the best
             home = "";
         }
-        System.out.println(home);
-        STORAGE_PATH = home + "sticky.dat";
-        BACKUP_PATH = home + "sticky.dat.bak";
-        LOCK_PATH = home + "lock";
+        STORAGE_PATH = home + "sticky.dat"; //main storage
+        BACKUP_PATH = home + "sticky.dat.bak"; //backup in case main storage is corrupt
+        LOCK_PATH = home + "lock"; //lock file to prevent multiple instances of StickyNotes to run on the same storage
     }
 
-    private static final ArrayList<Note> notes = new ArrayList<Note>();
-    private static boolean noAutoCreate = false;
+    private static final ArrayList<Note> notes = new ArrayList<Note>(); //currently open notes
+    private static boolean noAutoCreate = false; //if set to true, an empty note will not be created if the app is started on an empty storage. enabled by the -autostartup parameter
 
+    /**
+     * saves currently open notes to the main storage, and turns the previous
+     * storage to the backup storage.
+     *
+     * errors are ignored.
+     */
     public static void saveState() {
         synchronized (notes) {
             ObjectOutputStream oos = null;
@@ -114,6 +120,17 @@ public class Main {
         }
     }
 
+    /**
+     * attempts to load the notes in the specified storage. notes loaded from
+     * the file will also be adapted to the current screen DPI
+     *
+     * @param f storage
+     * @return true if loading was successful, false if it was unsuccessful
+     * (file not found or corrupt). if the storage is loaded correctly but there
+     * are no notes inside it, it returns true and creates a new empty note
+     * unless noAutoCreate is set to true, in which case it returns true and
+     * does nothing
+     */
     private static boolean attemptLoad(File f) {
         synchronized (notes) {
             ObjectInputStream ois = null;
@@ -162,6 +179,11 @@ public class Main {
         }
     }
 
+    /**
+     * load notes from storage (main or backup)
+     *
+     * @return true if loading was successful, false otherwise
+     */
     private static boolean loadState() {
         if (!attemptLoad(new File(STORAGE_PATH))) {
             if (!attemptLoad(new File(BACKUP_PATH))) {
@@ -171,6 +193,9 @@ public class Main {
         return true;
     }
 
+    /**
+     * creates a new empty note
+     */
     public static void newNote() {
         synchronized (notes) {
             Note n = new Note();
@@ -180,6 +205,11 @@ public class Main {
         }
     }
 
+    /**
+     * deletes the specified note
+     *
+     * @param n note to be deleted
+     */
     public static void delete(Note n) {
         synchronized (notes) {
             notes.remove(n);
@@ -192,6 +222,13 @@ public class Main {
         }
     }
 
+    /**
+     * checks if the application is already running by attempting to lock the
+     * lockfile
+     *
+     * @return true if the application is already running, false otherwise (in
+     * this case, the lockfile remains locked until the process is closed)
+     */
     private static boolean alreadyRunning() {
         try {
             File f = new File(LOCK_PATH);
@@ -201,19 +238,41 @@ public class Main {
             return true;
         }
     }
-
-    public static final float SCALE = calculateScale(); //used for DPI scaling. multiply each size by this factor.
-    //calculates SCALE based on screen DPI. target DPI is 80, so if DPI=80, SCALE=1. Min DPI is 64
-
+    
+    /**
+     * loads font from classpath
+     *
+     * @param pathInClasspath path in classpath
+     * @return Font or null if it doesn't exist
+     */
+    private static Font loadFont(String pathInClasspath) {
+        try {
+            return Font.createFont(Font.TRUETYPE_FONT, Main.class.getResourceAsStream(pathInClasspath));
+        } catch (Throwable ex) {
+            return null;
+        }
+    }
+    /**
+     * calculates SCALE based on screen DPI. target DPI is 80, so if DPI=80,
+     * SCALE=1. Min DPI is 64
+     *
+     * @return scale
+     */
     private static float calculateScale() {
         float dpi = (float) Toolkit.getDefaultToolkit().getScreenResolution();
         return (dpi < 64 ? 64 : dpi) / 80f;
     }
-    private static float TEXT_SIZE = 12f * SCALE, TEXT_SIZE_SMALL = 11f * SCALE, BUTTON_TEXT_SIZE = 11f * SCALE;
-    public static final Font BASE_FONT = Utils.loadFont("/com/dosse/stickynotes/fonts/OpenSans-Regular.ttf").deriveFont(TEXT_SIZE),
+    public static final float SCALE = calculateScale(); //used for DPI scaling. multiply each size by this factor.
+    private static float TEXT_SIZE = 12f * SCALE, TEXT_SIZE_SMALL = 11f * SCALE, BUTTON_TEXT_SIZE = 11f * SCALE; //default text sizes. used for DPI scaling
+    /**
+     * fonts
+     */
+    public static final Font BASE_FONT = loadFont("/com/dosse/stickynotes/fonts/OpenSans-Regular.ttf").deriveFont(TEXT_SIZE),
             SMALL_FONT = BASE_FONT.deriveFont(TEXT_SIZE_SMALL),
-            BUTTON_FONT = Utils.loadFont("/com/dosse/stickynotes/fonts/OpenSans-Bold.ttf").deriveFont(BUTTON_TEXT_SIZE);
-
+            BUTTON_FONT = loadFont("/com/dosse/stickynotes/fonts/OpenSans-Bold.ttf").deriveFont(BUTTON_TEXT_SIZE);
+    /**
+     * colors for swing MetalTheme
+     */
     private static final ColorUIResource METAL_PRIMARY1 = new ColorUIResource(220, 220, 220),
             METAL_PRIMARY2 = new ColorUIResource(220, 220, 220),
             METAL_PRIMARY3 = new ColorUIResource(220, 220, 220),
@@ -222,12 +281,13 @@ public class Main {
             DEFAULT_BACKGROUND = new ColorUIResource(255, 255, 255);
 
     public static void main(String args[]) {
-        if (alreadyRunning()) {
+        if (alreadyRunning()) { //if the app is already running, it terminates the current instance
             System.exit(1);
         }
-        if (args.length == 1 && args[0].equalsIgnoreCase("-autostartup")) {
+        if (args.length == 1 && args[0].equalsIgnoreCase("-autostartup")) { //if the app is started with the -autostartup flag, it doesn't create an empty note (on windows the app is run when the system starts and it would be silly to create a new note when the system boots and there are no saved notes)
             noAutoCreate = true;
         }
+        //apply swing MetalTheme, scroll down and ignore
         try {
             //<editor-fold defaultstate="collapsed" desc="MetalTheme">
             MetalLookAndFeel.setCurrentTheme(new MetalTheme() {
@@ -306,21 +366,24 @@ public class Main {
             //</editor-fold>
         } catch (Throwable ex) {
         }
+        //attempt to load from storage
         if (!loadState()) {
             if (!noAutoCreate) {
                 newNote();
             }
         }
+        //save current state
         saveState();
-        if (notes.isEmpty()) {
+        if (notes.isEmpty()) { //if there are no saved notes and none were created automatically (-autostartup flag), close the app
             System.exit(0);
         }
+        //this thread autosaves the notes every 60 seconds
         new Thread() {
             @Override
             public void run() {
                 for (;;) {
                     try {
-                        sleep(60000L);//autosave every 60s
+                        sleep(60000L);
                         synchronized (notes) {
                             if (notes.isEmpty()) {
                                 return;
@@ -332,12 +395,13 @@ public class Main {
                 }
             }
         }.start();
+        //this thread checks the notes every 5 seconds to make sure they're still inside the screen (in case the resolution changes)
         new Thread() {
             @Override
             public void run() {
                 for (;;) {
                     try {
-                        sleep(5000L);//check position every 5s (in case the resolution changes)
+                        sleep(5000L);
                         synchronized (notes) {
                             if (notes.isEmpty()) {
                                 return;
