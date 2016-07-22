@@ -1,7 +1,7 @@
 [Setup]
 AppId={{3E658137-CE80-49E3-8084-FD0B0158CA31}
 AppName="NoteBot"
-AppVersion="1.1"
+AppVersion="1.2"
 AppPublisher="Federico Dossena"
 AppPublisherURL="http://adolfintel.com/?p=stickynotes/i.frag"
 AppSupportURL="http://adolfintel.com/?p=stickynotes/i.frag"
