@@ -19,7 +19,10 @@ package com.dosse.stickynotes;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,11 +41,13 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.metal.MetalTheme;
 
 /**
- * This class coordinates all the notes. It contains code to load, save, create, delete. It also performs autosaving and initializes the UI.
+ * This class coordinates all the notes. It contains code to load, save, create,
+ * delete. It also performs autosaving and initializes the UI.
+ *
  * @author Federico
  */
 public class Main {
-
+    
     private static final String STORAGE_PATH, BACKUP_PATH, LOCK_PATH; //these variables will contain the paths to the files used by the application, initialized below
 
     static {
@@ -68,7 +73,7 @@ public class Main {
                 Path p = Paths.get(home);
                 Files.createDirectories(p);
             }
-
+            
         } catch (Throwable t) {
             //fallback path, local folder and hope for the best
             home = "";
@@ -77,7 +82,7 @@ public class Main {
         BACKUP_PATH = home + "sticky.dat.bak"; //backup in case main storage is corrupt
         LOCK_PATH = home + "lock"; //lock file to prevent multiple instances of StickyNotes to run on the same storage
     }
-
+    
     private static final ArrayList<Note> notes = new ArrayList<Note>(); //currently open notes
     private static boolean noAutoCreate = false; //if set to true, an empty note will not be created if the app is started on an empty storage. enabled by the -autostartup parameter
 
@@ -152,7 +157,9 @@ public class Main {
                 }
                 for (int i = 0; i < n; i++) {
                     Note note = new Note();
-                    note.setLocation((Point) (ois.readObject()));
+                    Point p = (Point) (ois.readObject());
+                    note.setPreferredLocation(p);
+                    note.setLocation(p);
                     Dimension d = (Dimension) (ois.readObject());
                     d.height *= scaleMul;
                     d.width *= scaleMul;
@@ -239,6 +246,25 @@ public class Main {
         }
     }
     
+    public static Dimension getExtendedScreenResolution() {
+        //get screen resolution, also works with multiple screens
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
+        Dimension s = new Dimension(0, 0);
+        for (GraphicsDevice screen : screens) {
+            Rectangle r = screen.getDefaultConfiguration().getBounds();
+            r.width += r.x;
+            r.height += r.y;
+            if (r.width > s.width) {
+                s.width = r.width;
+            }
+            if (r.height > s.height) {
+                s.height = r.height;
+            }
+        }
+        return s;
+    }
+
     /**
      * loads font from classpath
      *
@@ -252,6 +278,7 @@ public class Main {
             return null;
         }
     }
+
     /**
      * calculates SCALE based on screen DPI. target DPI is 80, so if DPI=80,
      * SCALE=1. Min DPI is 64
@@ -279,7 +306,7 @@ public class Main {
             METAL_SECONDARY1 = new ColorUIResource(240, 240, 240),
             METAL_SECONDARY2 = new ColorUIResource(240, 240, 240),
             DEFAULT_BACKGROUND = new ColorUIResource(255, 255, 255);
-
+    
     public static void main(String args[]) {
         if (alreadyRunning()) { //if the app is already running, it terminates the current instance
             System.exit(1);
@@ -295,65 +322,65 @@ public class Main {
                 protected ColorUIResource getPrimary1() {
                     return METAL_PRIMARY1;
                 }
-
+                
                 @Override
                 protected ColorUIResource getPrimary2() {
                     return METAL_PRIMARY2;
                 }
-
+                
                 @Override
                 protected ColorUIResource getPrimary3() {
                     return METAL_PRIMARY3;
                 }
-
+                
                 @Override
                 protected ColorUIResource getSecondary1() {
                     return METAL_SECONDARY1;
                 }
-
+                
                 @Override
                 protected ColorUIResource getSecondary2() {
                     return METAL_SECONDARY2;
                 }
-
+                
                 @Override
                 protected ColorUIResource getSecondary3() {
                     return DEFAULT_BACKGROUND;
                 }
-
+                
                 @Override
                 public String getName() {
                     return "Metal Theme";
                 }
-
+                
                 private final FontUIResource REGULAR_FONT = new FontUIResource(Main.BASE_FONT),
                         SMALL_FONT = new FontUIResource(Main.SMALL_FONT);
-
+                
                 @Override
                 public FontUIResource getControlTextFont() {
                     return REGULAR_FONT;
                 }
-
+                
                 @Override
                 public FontUIResource getSystemTextFont() {
                     return REGULAR_FONT;
                 }
-
+                
                 @Override
                 public FontUIResource getUserTextFont() {
                     return REGULAR_FONT;
                 }
-
+                
                 @Override
                 public FontUIResource getMenuTextFont() {
                     return SMALL_FONT;
                 }
-
+                
                 @Override
                 public FontUIResource getWindowTitleFont() {
                     return REGULAR_FONT;
                 }
-
+                
                 @Override
                 public FontUIResource getSubTextFont() {
                     return REGULAR_FONT;
@@ -381,6 +408,7 @@ public class Main {
         new Thread() {
             @Override
             public void run() {
+                setPriority(Thread.MIN_PRIORITY);
                 for (;;) {
                     try {
                         sleep(60000L);
@@ -395,19 +423,20 @@ public class Main {
                 }
             }
         }.start();
-        //this thread checks the notes every 5 seconds to make sure they're still inside the screen (in case the resolution changes)
+        //this thread checks the notes every 1 second to make sure they're still inside the screen (in case the resolution changes)
         new Thread() {
             @Override
             public void run() {
+                setPriority(Thread.MIN_PRIORITY);
                 for (;;) {
                     try {
-                        sleep(5000L);
+                        sleep(1000L);
                         synchronized (notes) {
                             if (notes.isEmpty()) {
                                 return;
                             }
                             for (Note n : notes) {
-                                n.setLocation(n.getLocation());
+                                n.setLocation(n.getPreferredLocation());
                             }
                         }
                     } catch (Throwable t) {
