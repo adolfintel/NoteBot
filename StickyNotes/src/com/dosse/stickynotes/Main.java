@@ -109,7 +109,7 @@ public class Main {
                 oos.writeObject(SCALE);
                 oos.writeObject(notes.size());
                 for (Note n : notes) {
-                    oos.writeObject(n.getLocation());
+                    oos.writeObject(n.getPreferredLocation());
                     oos.writeObject(n.getSize());
                     oos.writeObject(n.getColorScheme());
                     oos.writeObject(n.getText());
