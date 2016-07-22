@@ -27,6 +27,9 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import static java.lang.Thread.sleep;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import javax.swing.UIManager;
 import javax.swing.plaf.ColorUIResource;
@@ -40,6 +43,41 @@ import javax.swing.plaf.metal.MetalTheme;
  */
 public class Main {
 
+    private static final String STORAGE_PATH, BACKUP_PATH, LOCK_PATH;
+
+    static {
+        String os = System.getProperty("os.name").toLowerCase();
+        String home = "";
+        try {
+            if (os.startsWith("win")) {
+                if (os.contains("xp")) {
+                    home = System.getenv("APPDATA") + "\\NoteBot\\";
+                } else {
+                    home = System.getProperty("user.home") + "\\AppData\\Local\\NoteBot\\";
+                }
+            } else {
+                home = System.getProperty("user.home") + "/.notebot/";
+            }
+            File f = new File(home);
+            if (f.exists()) {
+                if (!f.isDirectory()) {
+                    throw new Exception();
+                }
+            } else {
+                Path p = Paths.get(home);
+                Files.createDirectories(p);
+            }
+
+        } catch (Throwable t) {
+            System.out.println(t);
+            home = "";
+        }
+        System.out.println(home);
+        STORAGE_PATH = home + "sticky.dat";
+        BACKUP_PATH = home + "sticky.dat.bak";
+        LOCK_PATH = home + "lock";
+    }
+
     private static final ArrayList<Note> notes = new ArrayList<Note>();
     private static boolean noAutoCreate = false;
 
@@ -47,15 +85,15 @@ public class Main {
         synchronized (notes) {
             ObjectOutputStream oos = null;
             try {
-                File st = new File("sticky.dat");
-                File bk = new File("sticky.dat.bak");
+                File st = new File(STORAGE_PATH);
+                File bk = new File(BACKUP_PATH);
                 if (bk.exists()) {
                     bk.delete();
                 }
                 if (st.exists()) {
                     st.renameTo(bk);
                 }
-                st = new File("sticky.dat");
+                st = new File(STORAGE_PATH);
                 oos = new ObjectOutputStream(new FileOutputStream(st));
                 oos.writeObject(SCALE);
                 oos.writeObject(notes.size());
@@ -125,8 +163,8 @@ public class Main {
     }
 
     private static boolean loadState() {
-        if (!attemptLoad(new File("sticky.dat"))) {
-            if (!attemptLoad(new File("sticky.dat.bak"))) {
+        if (!attemptLoad(new File(STORAGE_PATH))) {
+            if (!attemptLoad(new File(BACKUP_PATH))) {
                 return false;
             }
         }
@@ -156,7 +194,7 @@ public class Main {
 
     private static boolean alreadyRunning() {
         try {
-            File f = new File("lock");
+            File f = new File(LOCK_PATH);
             FileOutputStream fos = new FileOutputStream(f);
             return fos.getChannel().tryLock() == null;
         } catch (Throwable t) {
@@ -274,7 +312,9 @@ public class Main {
             }
         }
         saveState();
-        if(notes.isEmpty()) System.exit(0);
+        if (notes.isEmpty()) {
+            System.exit(0);
+        }
         new Thread() {
             @Override
             public void run() {
