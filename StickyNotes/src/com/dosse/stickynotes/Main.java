@@ -158,7 +158,6 @@ public class Main {
                 for (int i = 0; i < n; i++) {
                     Note note = new Note();
                     Point p = (Point) (ois.readObject());
-                    note.setPreferredLocation(p);
                     note.setLocation(p);
                     Dimension d = (Dimension) (ois.readObject());
                     d.height *= scaleMul;

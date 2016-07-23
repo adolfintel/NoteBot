@@ -21,6 +21,7 @@ import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -196,7 +197,7 @@ public class Note extends JDialog {
     private JPopupMenu copyPasteMenu, //menu shown when the textarea is right-clicked
             colorMenu; //menu shown when the top is right-clicked
     private JMenuItem cut, copy, paste, delete, selectAll; //menu items inside copyPasteMenu
-    private Point preferredLocation; //the preferred location is the last user-set location of the note. this is useful when the screen resolution is changed and the notes are all scrambled up
+    private Point preferredLocation=new Point(0,0); //the preferred location is the last user-set location of the note. this is useful when the screen resolution is changed and the notes are all scrambled up
 
     /**
      * Creates new form Note.
@@ -256,7 +257,6 @@ public class Note extends JDialog {
             @Override
             public void mouseDragged(MouseEvent evt) {
                 setLocation(evt.getXOnScreen() - mouseDragStartX, evt.getYOnScreen() - mouseDragStartY);
-                preferredLocation=getLocation();
             }
         });
         //initialize ComponentResizer to make the window resizable
@@ -266,7 +266,6 @@ public class Note extends JDialog {
         cr.setMinimumSize(new Dimension((int) (160 * Main.SCALE), (int) (90 * Main.SCALE))); //min size is 160x90 @80dpi
         setSize((int) (190 * Main.SCALE), (int) (170 * Main.SCALE)); //default size is 190x170 @80dpi
         setLocation(MouseInfo.getPointerInfo().getLocation()); //new note is placed at current mouse coordinates
-        preferredLocation=getLocation();
 
         //new note button
         newNote.setFont(new FontUIResource(Main.BUTTON_FONT));
@@ -456,14 +455,7 @@ public class Note extends JDialog {
      */
     @Override
     public void setLocation(int x, int y) {
-        Dimension s=Main.getExtendedScreenResolution();
-        if (x+40*Main.SCALE > s.width) {
-            x = (int) (s.width - 60*Main.SCALE);
-        }
-        if (y+40*Main.SCALE > s.height) {
-            y = (int) (s.height - 60*Main.SCALE);
-        }
-        super.setLocation(x, y);
+        setBounds(x, y, getWidth(), getHeight());
     }
 
     /**
@@ -475,6 +467,41 @@ public class Note extends JDialog {
     public void setLocation(Point p) {
         setLocation(p.x, p.y);
     }
+
+    /**
+     * setBounds method is overridden to force the note to stay on the screen
+     * 
+     * @param x x
+     * @param y y
+     * @param width width
+     * @param height height
+     */
+    @Override
+    public void setBounds(int x, int y, int width, int height) {
+        preferredLocation.x=x; preferredLocation.y=y;
+        Dimension s=Main.getExtendedScreenResolution();
+        if (x+60*Main.SCALE > s.width) {
+            x = (int) (s.width - 60*Main.SCALE);
+        }
+        if (y+60*Main.SCALE > s.height) {
+            y = (int) (s.height - 60*Main.SCALE);
+        }
+        super.setBounds(x, y, width, height);
+    }
+
+    /**
+     * setBounds method is overridden to force the note to stay on the screen
+     * 
+     * @param r new bounds
+     */
+    @Override
+    public void setBounds(Rectangle r) {
+        setBounds(r.x,r.y,r.width,r.height);
+    }
+
+    
+    
+    
 
     /**
      * get text currently inside the note
