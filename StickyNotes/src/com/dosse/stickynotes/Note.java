@@ -28,9 +28,13 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -80,6 +84,16 @@ public class Note extends JDialog {
         new Color(248, 248, 182),
         new Color(105, 105, 77),
         new Color(253, 253, 202),
+        new Color(0, 0, 0),
+        new Color(136, 195, 255),
+        new Color(0, 0, 0)
+    };
+    private static final Color[] ORANGE_SCHEME = new Color[]{
+        new Color(248, 205, 161),
+        new Color(230, 189, 149),
+        new Color(248, 205, 161),
+        new Color(102, 84, 66),
+        new Color(255, 215, 173),
         new Color(0, 0, 0),
         new Color(136, 195, 255),
         new Color(0, 0, 0)
@@ -197,7 +211,9 @@ public class Note extends JDialog {
     private JPopupMenu copyPasteMenu, //menu shown when the textarea is right-clicked
             colorMenu; //menu shown when the top is right-clicked
     private JMenuItem cut, copy, paste, delete, selectAll; //menu items inside copyPasteMenu
-    private Point preferredLocation=new Point(0,0); //the preferred location is the last user-set location of the note. this is useful when the screen resolution is changed and the notes are all scrambled up
+    private Point preferredLocation = new Point(0, 0); //the preferred location is the last user-set location of the note. this is useful when the screen resolution is changed and the notes are all scrambled up
+    private float textScale = 1; //text zoom
+    private static final float MIN_TEXT_SCALE = 0.2f, MAX_TEXT_SCALE = 4f; //min max text zoom
 
     /**
      * Creates new form Note.
@@ -220,6 +236,12 @@ public class Note extends JDialog {
             public void windowLostFocus(WindowEvent e) {
                 //if focus is lost, save the current state
                 Main.saveState();
+            }
+
+            @Override
+            public void windowGainedFocus(WindowEvent e) {
+                Main.bringToFront(Note.this);
+                text.requestFocusInWindow();
             }
         });
         setTitle(getLocString("APPNAME")); //set window title
@@ -311,6 +333,65 @@ public class Note extends JDialog {
             }
         });
 
+        //listener for ctrl+wheel (for zooming in and out)
+        text.addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (e.isControlDown() || e.isMetaDown()) { //scroll wheel with ctrl pressed (isMetaDown is for apple faggots)
+                    if (e.getWheelRotation() < 0) {
+                        setTextScale(textScale + 0.1f);
+                    } else if (e.getWheelRotation() > 0) {
+                        setTextScale(textScale - 0.1f);
+                    }
+                } else { //scroll wheel without ctrl pressed simply scrolls
+                    jScrollPane1.getMouseWheelListeners()[0].mouseWheelMoved(e);
+                }
+            }
+        });
+
+        //listener for ctrl+add, ctrl+minus, ctrl+NP0 (for zooming in and out)
+        text.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.isControlDown() || e.isMetaDown()) {
+                    if (e.getKeyCode()== KeyEvent.VK_ADD) {
+                        setTextScale(textScale + 0.1f);
+                    } else if (e.getKeyCode() == KeyEvent.VK_SUBTRACT) {
+                        setTextScale(textScale - 0.1f);
+                    } else if (e.getKeyCode() == KeyEvent.VK_NUMPAD0) {
+                        setTextScale(1);
+                    }
+                }
+            }
+        });
+        
+        //listener for ctrl+N, ctrl+D
+        text.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.isControlDown() || e.isMetaDown()) {
+                    if (e.getKeyCode()== KeyEvent.VK_N) {
+                        Main.newNote().setLocation((int)(preferredLocation.x+40*Main.SCALE),(int)(preferredLocation.y+40*Main.SCALE));
+                    } else if (e.getKeyCode() == KeyEvent.VK_D) {
+                        Main.delete(Note.this);
+                    }
+                }
+            }
+        });
+        
+        //listener for ctrl+A (select all text)
+        text.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.isControlDown() || e.isMetaDown()) {
+                    if (e.getKeyCode()== KeyEvent.VK_A) {
+                        text.setSelectionStart(0);
+                        text.setSelectionEnd(text.getText().length());
+                    }
+                }
+            }
+        });
+
         //right click on top bar
         wrapper2.addMouseListener(new MouseAdapter() {
             @Override
@@ -381,6 +462,13 @@ public class Note extends JDialog {
         m.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 setColorScheme(YELLOW_SCHEME);
+            }
+        });
+        colorMenu.add(m);
+        m = new JMenuItem(getLocString("ORANGE"));
+        m.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setColorScheme(ORANGE_SCHEME);
             }
         });
         colorMenu.add(m);
@@ -470,7 +558,7 @@ public class Note extends JDialog {
 
     /**
      * setBounds method is overridden to force the note to stay on the screen
-     * 
+     *
      * @param x x
      * @param y y
      * @param width width
@@ -478,30 +566,27 @@ public class Note extends JDialog {
      */
     @Override
     public void setBounds(int x, int y, int width, int height) {
-        preferredLocation.x=x; preferredLocation.y=y;
-        Dimension s=Main.getExtendedScreenResolution();
-        if (x+60*Main.SCALE > s.width) {
-            x = (int) (s.width - 60*Main.SCALE);
+        preferredLocation.x = x;
+        preferredLocation.y = y;
+        Dimension s = Main.getExtendedScreenResolution();
+        if (x + 60 * Main.SCALE > s.width) {
+            x = (int) (s.width - 60 * Main.SCALE);
         }
-        if (y+60*Main.SCALE > s.height) {
-            y = (int) (s.height - 60*Main.SCALE);
+        if (y + 60 * Main.SCALE > s.height) {
+            y = (int) (s.height - 60 * Main.SCALE);
         }
         super.setBounds(x, y, width, height);
     }
 
     /**
      * setBounds method is overridden to force the note to stay on the screen
-     * 
+     *
      * @param r new bounds
      */
     @Override
     public void setBounds(Rectangle r) {
-        setBounds(r.x,r.y,r.width,r.height);
+        setBounds(r.x, r.y, r.width, r.height);
     }
-
-    
-    
-    
 
     /**
      * get text currently inside the note
@@ -520,20 +605,38 @@ public class Note extends JDialog {
     public void setText(String s) {
         text.setText(s);
     }
-    
+
     /**
      * gets the last user-set location of the note
+     *
      * @return location
      */
-    public Point getPreferredLocation(){
+    public Point getPreferredLocation() {
         return preferredLocation;
     }
+
     /**
-     * sets preferred location (last user-set location of the note)
-     * @param p new preferred location
+     * get current text scale
+     *
+     * @return text scale
      */
-    public void setPreferredLocation(Point p){
-        preferredLocation=p;
+    public float getTextScale() {
+        return textScale;
+    }
+
+    /**
+     * set new text scale
+     *
+     * @param scale scale as float 0.2-4.0
+     */
+    public void setTextScale(float scale) {
+        if (scale >= 0.99 && scale <= 1.01) {
+            textScale = 1;
+            text.setFont(Main.BASE_FONT);
+        } else {
+            textScale = scale < MIN_TEXT_SCALE ? MIN_TEXT_SCALE : scale > MAX_TEXT_SCALE ? MAX_TEXT_SCALE : scale;
+            text.setFont(Main.BASE_FONT.deriveFont(Main.TEXT_SIZE * textScale));
+        }
     }
 
     /**

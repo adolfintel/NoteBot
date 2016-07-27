@@ -47,7 +47,7 @@ import javax.swing.plaf.metal.MetalTheme;
  * @author Federico
  */
 public class Main {
-    
+
     private static final String STORAGE_PATH, BACKUP_PATH, LOCK_PATH; //these variables will contain the paths to the files used by the application, initialized below
 
     static {
@@ -73,7 +73,7 @@ public class Main {
                 Path p = Paths.get(home);
                 Files.createDirectories(p);
             }
-            
+
         } catch (Throwable t) {
             //fallback path, local folder and hope for the best
             home = "";
@@ -82,13 +82,21 @@ public class Main {
         BACKUP_PATH = home + "sticky.dat.bak"; //backup in case main storage is corrupt
         LOCK_PATH = home + "lock"; //lock file to prevent multiple instances of StickyNotes to run on the same storage
     }
-    
+
     private static final ArrayList<Note> notes = new ArrayList<Note>(); //currently open notes
     private static boolean noAutoCreate = false; //if set to true, an empty note will not be created if the app is started on an empty storage. enabled by the -autostartup parameter
 
     /**
      * saves currently open notes to the main storage, and turns the previous
      * storage to the backup storage.
+     *
+     * FORMAT: The .dat file will hold data as serialized objects. A Float
+     * contains the SCALE at which the save was made, then an Integer contains
+     * the number of notes, then for each note we have its location (Point), its
+     * size (Dimension), the color scheme (Color[8]), the text (String).
+     * Finally, a float for each note with the text scale for that note. This
+     * data is written at the end to ensure compatibility with older versions of
+     * the program.
      *
      * errors are ignored.
      */
@@ -113,6 +121,10 @@ public class Main {
                     oos.writeObject(n.getSize());
                     oos.writeObject(n.getColorScheme());
                     oos.writeObject(n.getText());
+                }
+                //text scales are written at the end of the file so that older versions of the program can still load this .dat file
+                for (Note n : notes) {
+                    oos.writeObject(n.getTextScale());
                 }
                 oos.flush();
                 oos.close();
@@ -165,8 +177,17 @@ public class Main {
                     note.setSize(d);
                     note.setColorScheme((Color[]) (ois.readObject()));
                     note.setText((String) (ois.readObject()));
-                    note.setVisible(true);
                     notes.add(note);
+                }
+                try {
+                    //attempt to load text scales. this will fail if we're loading a .dat file from a previous version
+                    for (int i = 0; i < n; i++) {
+                        notes.get(i).setTextScale((Float) (ois.readObject()));
+                    }
+                } catch (Throwable t) {
+                }
+                for (Note note : notes) {
+                    note.setVisible(true);
                 }
                 ois.close();
             } catch (Throwable t) {
@@ -201,13 +222,15 @@ public class Main {
 
     /**
      * creates a new empty note
+     * @return the newly created note
      */
-    public static void newNote() {
+    public static Note newNote() {
         synchronized (notes) {
             Note n = new Note();
             n.setVisible(true);
             notes.add(n);
             saveState();
+            return n;
         }
     }
 
@@ -227,6 +250,13 @@ public class Main {
             }
         }
     }
+    
+    public static void bringToFront(Note n){
+        synchronized (notes) {
+            notes.remove(n);
+            notes.add(n);
+        }
+    }
 
     /**
      * checks if the application is already running by attempting to lock the
@@ -244,7 +274,7 @@ public class Main {
             return true;
         }
     }
-    
+
     public static Dimension getExtendedScreenResolution() {
         //get screen resolution, also works with multiple screens
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -289,7 +319,7 @@ public class Main {
         return (dpi < 64 ? 64 : dpi) / 80f;
     }
     public static final float SCALE = calculateScale(); //used for DPI scaling. multiply each size by this factor.
-    private static float TEXT_SIZE = 12f * SCALE, TEXT_SIZE_SMALL = 11f * SCALE, BUTTON_TEXT_SIZE = 11f * SCALE; //default text sizes. used for DPI scaling
+    public static final float TEXT_SIZE = 12f * SCALE, TEXT_SIZE_SMALL = 11f * SCALE, BUTTON_TEXT_SIZE = 11f * SCALE; //default text sizes. used for DPI scaling
     /**
      * fonts
      */
@@ -305,7 +335,7 @@ public class Main {
             METAL_SECONDARY1 = new ColorUIResource(240, 240, 240),
             METAL_SECONDARY2 = new ColorUIResource(240, 240, 240),
             DEFAULT_BACKGROUND = new ColorUIResource(255, 255, 255);
-    
+
     public static void main(String args[]) {
         if (alreadyRunning()) { //if the app is already running, it terminates the current instance
             System.exit(1);
@@ -321,65 +351,65 @@ public class Main {
                 protected ColorUIResource getPrimary1() {
                     return METAL_PRIMARY1;
                 }
-                
+
                 @Override
                 protected ColorUIResource getPrimary2() {
                     return METAL_PRIMARY2;
                 }
-                
+
                 @Override
                 protected ColorUIResource getPrimary3() {
                     return METAL_PRIMARY3;
                 }
-                
+
                 @Override
                 protected ColorUIResource getSecondary1() {
                     return METAL_SECONDARY1;
                 }
-                
+
                 @Override
                 protected ColorUIResource getSecondary2() {
                     return METAL_SECONDARY2;
                 }
-                
+
                 @Override
                 protected ColorUIResource getSecondary3() {
                     return DEFAULT_BACKGROUND;
                 }
-                
+
                 @Override
                 public String getName() {
                     return "Metal Theme";
                 }
-                
+
                 private final FontUIResource REGULAR_FONT = new FontUIResource(Main.BASE_FONT),
                         SMALL_FONT = new FontUIResource(Main.SMALL_FONT);
-                
+
                 @Override
                 public FontUIResource getControlTextFont() {
                     return REGULAR_FONT;
                 }
-                
+
                 @Override
                 public FontUIResource getSystemTextFont() {
                     return REGULAR_FONT;
                 }
-                
+
                 @Override
                 public FontUIResource getUserTextFont() {
                     return REGULAR_FONT;
                 }
-                
+
                 @Override
                 public FontUIResource getMenuTextFont() {
                     return SMALL_FONT;
                 }
-                
+
                 @Override
                 public FontUIResource getWindowTitleFont() {
                     return REGULAR_FONT;
                 }
-                
+
                 @Override
                 public FontUIResource getSubTextFont() {
                     return REGULAR_FONT;
