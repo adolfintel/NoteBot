@@ -11,8 +11,8 @@ NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 
 ## Features
 * Stick notes on your desktop
-* Can move and resize
-* 7 different colors
+* Can move, resize and zoom
+* 8 different colors
 * Auto startup (Windows only)
 * Support for high DPI screens and touch devices
 
