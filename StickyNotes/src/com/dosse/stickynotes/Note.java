@@ -354,7 +354,7 @@ public class Note extends JDialog {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.isControlDown() || e.isMetaDown()) {
-                    if (e.getKeyCode()== KeyEvent.VK_ADD) {
+                    if (e.getKeyCode() == KeyEvent.VK_ADD) {
                         setTextScale(textScale + 0.1f);
                     } else if (e.getKeyCode() == KeyEvent.VK_SUBTRACT) {
                         setTextScale(textScale - 0.1f);
@@ -364,27 +364,27 @@ public class Note extends JDialog {
                 }
             }
         });
-        
+
         //listener for ctrl+N, ctrl+D
         text.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.isControlDown() || e.isMetaDown()) {
-                    if (e.getKeyCode()== KeyEvent.VK_N) {
-                        Main.newNote().setLocation((int)(preferredLocation.x+40*Main.SCALE),(int)(preferredLocation.y+40*Main.SCALE));
+                    if (e.getKeyCode() == KeyEvent.VK_N) {
+                        Main.newNote().setLocation((int) (preferredLocation.x + 40 * Main.SCALE), (int) (preferredLocation.y + 40 * Main.SCALE));
                     } else if (e.getKeyCode() == KeyEvent.VK_D) {
                         Main.delete(Note.this);
                     }
                 }
             }
         });
-        
+
         //listener for ctrl+A (select all text)
         text.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.isControlDown() || e.isMetaDown()) {
-                    if (e.getKeyCode()== KeyEvent.VK_A) {
+                    if (e.getKeyCode() == KeyEvent.VK_A) {
                         text.setSelectionStart(0);
                         text.setSelectionEnd(text.getText().length());
                     }
@@ -566,6 +566,9 @@ public class Note extends JDialog {
      */
     @Override
     public void setBounds(int x, int y, int width, int height) {
+        if (preferredLocation == null) { //for some odd fucking reason, this can happen on some versions of java
+            preferredLocation = new Point(0, 0);
+        }
         preferredLocation.x = x;
         preferredLocation.y = y;
         Dimension s = Main.getExtendedScreenResolution();

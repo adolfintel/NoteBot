@@ -1,1 +1,1 @@
-This folder contains all the files used to build the Windows installer
+This folder contains all the files used to build the Windows installer and the .deb package
