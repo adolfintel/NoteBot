@@ -29,7 +29,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
 import static java.lang.Thread.sleep;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -222,6 +224,7 @@ public class Main {
 
     /**
      * creates a new empty note
+     *
      * @return the newly created note
      */
     public static Note newNote() {
@@ -250,8 +253,8 @@ public class Main {
             }
         }
     }
-    
-    public static void bringToFront(Note n){
+
+    public static void bringToFront(Note n) {
         synchronized (notes) {
             notes.remove(n);
             notes.add(n);
@@ -267,9 +270,13 @@ public class Main {
      */
     private static boolean alreadyRunning() {
         try {
-            File f = new File(LOCK_PATH);
-            FileOutputStream fos = new FileOutputStream(f);
-            return fos.getChannel().tryLock() == null;
+            FileChannel ch = new RandomAccessFile(new File(LOCK_PATH), "rw").getChannel();
+            if (ch.tryLock() != null) {
+                return false;
+            } else {
+                ch.close();
+                return true;
+            }
         } catch (Throwable t) {
             return true;
         }
