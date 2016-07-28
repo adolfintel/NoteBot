@@ -4,6 +4,8 @@ NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 ## Download
 [Installer for Windows](http://downloads.adolfintel.com/geth.php?r=stickynotes-win)
 
+[Deb Package for Ubuntu, Debian, ...](http://downloads.adolfintel.com/geth.php?r=stickynotes-deb)
+
 [Binaries for other platforms](http://downloads.adolfintel.com/geth.php?r=stickynotes-bin) (Requires Java)
 
 ## Website
@@ -34,7 +36,7 @@ Sticky Notes became trash with the August 2016 update of Windows 10, which turne
 ## Usage
 Import the projects into Netbeans.
 
-_SETUP contains all the files used to build the Windows Installer.
+_SETUP contains all the files used to build the Windows installer and the .deb package.
 To build the Windows installer, you'll need [Inno Setup](http://www.jrsoftware.org/isinfo.php) and [launch4j](http://launch4j.sourceforge.net/).
 
 ## Screenshots
