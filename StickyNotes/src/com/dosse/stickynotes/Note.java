@@ -52,7 +52,11 @@ import javax.swing.JTextArea;
 import javax.swing.LayoutStyle;
 import javax.swing.WindowConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
 import javax.swing.plaf.FontUIResource;
+import javax.swing.text.Document;
+import javax.swing.undo.UndoManager;
 
 /**
  *
@@ -202,15 +206,15 @@ public class Note extends JDialog {
     }
 
     //UI Elements
-    private JPanel wrapper1; //outer wrapper: it's the area that the user can use to resize the window
-    private JPanel wrapper2; //inner wrapper: it contains the buttons and the actual note; the empty space can be dragged to move the note
+    private final JPanel wrapper1; //outer wrapper: it's the area that the user can use to resize the window
+    private final JPanel wrapper2; //inner wrapper: it contains the buttons and the actual note; the empty space can be dragged to move the note
     private int mouseDragStartX, mouseDragStartY; //used for dragging
-    private JButton deleteNote, newNote; //buttons to delete and create notes
-    private JScrollPane jScrollPane1; //container for the text. provides the scrollbar
-    private JTextArea text; //the actual note
-    private JPopupMenu copyPasteMenu, //menu shown when the textarea is right-clicked
+    private final JButton deleteNote, newNote; //buttons to delete and create notes
+    private final JScrollPane jScrollPane1; //container for the text. provides the scrollbar
+    private final JTextArea text; //the actual note
+    private final JPopupMenu copyPasteMenu, //menu shown when the textarea is right-clicked
             colorMenu; //menu shown when the top is right-clicked
-    private JMenuItem cut, copy, paste, delete, selectAll; //menu items inside copyPasteMenu
+    private final JMenuItem cut, copy, paste, delete, selectAll; //menu items inside copyPasteMenu
     private Point preferredLocation = new Point(0, 0); //the preferred location is the last user-set location of the note. this is useful when the screen resolution is changed and the notes are all scrambled up
     private float textScale = 1; //text zoom
     private static final float MIN_TEXT_SCALE = 0.2f, MAX_TEXT_SCALE = 4f; //min max text zoom
@@ -264,6 +268,16 @@ public class Note extends JDialog {
         //enable line wrap
         text.setLineWrap(true);
         text.setWrapStyleWord(true);
+        //allow undo/redo
+        final UndoManager undo = new UndoManager();
+        Document doc = text.getDocument();
+        doc.addUndoableEditListener(new UndoableEditListener() {
+            @Override
+            public void undoableEditHappened(UndoableEditEvent e) {
+                undo.addEdit(e.getEdit());
+            }
+        });
+
         jScrollPane1.setBorder(null);
         jScrollPane1.setViewportView(text); //add text area to scrollpane
 
@@ -392,6 +406,25 @@ public class Note extends JDialog {
             }
         });
 
+        //listener for ctrl+Z, ctrl+Y (undo, redo)
+        text.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.isControlDown() || e.isMetaDown()) {
+                    if (e.getKeyCode() == KeyEvent.VK_Z) {
+                        if (undo.canUndo()) {
+                            undo.undo();
+                        }
+                    } else if (e.getKeyCode() == KeyEvent.VK_Y) {
+                        if (undo.canRedo()) {
+                            undo.redo();
+                        }
+                    }
+
+                }
+            }
+        });
+
         //right click on top bar
         wrapper2.addMouseListener(new MouseAdapter() {
             @Override
@@ -405,44 +438,37 @@ public class Note extends JDialog {
         //initialize copy-paste menu
         copyPasteMenu = new JPopupMenu();
         cut = new JMenuItem(getLocString("CUT"));
+        cut.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         cut.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int from = text.getSelectionStart(), to = text.getSelectionEnd();
-                setClipboard(text.getSelectedText());
-                String s = text.getText().substring(0, from) + text.getText().substring(to);
-                text.setText(s);
-                text.setCaretPosition(from);
+                text.cut();
             }
         });
         copy = new JMenuItem(getLocString("COPY"));
+        copy.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         copy.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                setClipboard(text.getSelectedText());
+                text.copy();
             }
         });
         paste = new JMenuItem(getLocString("PASTE"));
+        paste.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         paste.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int from = text.getSelectionStart(), to = text.getSelectionEnd();
-                String clipboard = getClipboard();
-                if (clipboard == null) {
-                    return;
-                }
-                String s = text.getText().substring(0, from) + clipboard + text.getText().substring(to);
-                text.setText(s);
-                text.setCaretPosition(from + getClipboard().length());
+                text.paste();
             }
         });
         delete = new JMenuItem(getLocString("DELETE"));
+        delete.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         delete.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                int from = text.getSelectionStart(), to = text.getSelectionEnd();
-                String s = text.getText().substring(0, from) + text.getText().substring(to);
-                text.setText(s);
-                text.setCaretPosition(from);
+                String s = getClipboard();
+                text.cut();
+                setClipboard(s);
             }
         });
         selectAll = new JMenuItem(getLocString("SELECTALL"));
+        selectAll.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         selectAll.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 text.setSelectionStart(0);
@@ -458,59 +484,35 @@ public class Note extends JDialog {
 
         //initialize color selection menu (right click on top bar)
         colorMenu = new JPopupMenu();
-        JMenuItem m = new JMenuItem(getLocString("YELLOW"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(YELLOW_SCHEME);
+        colorMenu.add(new ColorSelector(new Color[][]{YELLOW_SCHEME, ORANGE_SCHEME, BLUE_SCHEME, GREEN_SCHEME, PINK_SCHEME, PURPLE_SCHEME, RED_SCHEME, WHITE_SCHEME}) {
+            @Override
+            public void onColorSchemeSelected(Color[] scheme) {
+                setColorScheme(scheme);
+                colorMenu.setVisible(false);
+                Main.saveState();
             }
         });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("ORANGE"));
+        JMenuItem m = new JMenuItem(getLocString("ABOUT"));
+        m.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         m.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
-                setColorScheme(ORANGE_SCHEME);
-            }
-        });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("BLUE"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(BLUE_SCHEME);
-            }
-        });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("GREEN"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(GREEN_SCHEME);
-            }
-        });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("PINK"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(PINK_SCHEME);
-            }
-        });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("PURPLE"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(PURPLE_SCHEME);
-            }
-        });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("RED"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(RED_SCHEME);
-            }
-        });
-        colorMenu.add(m);
-        m = new JMenuItem(getLocString("WHITE"));
-        m.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setColorScheme(WHITE_SCHEME);
+                //create about note
+                Note a = new Note();
+                a.setColorScheme(new Color[]{
+                    new Color(48, 48, 48),
+                    new Color(64, 64, 64),
+                    new Color(48, 48, 48),
+                    new Color(96, 96, 96),
+                    new Color(30, 30, 30),
+                    new Color(255, 255, 255),
+                    new Color(192, 192, 192),
+                    new Color(0, 0, 0)
+                });
+                a.setText(getLocString("ABOUT_TEXT"));
+                a.setSize((int) (300 * Main.SCALE), (int) (250 * Main.SCALE));
+                a.setTextScale(0.92f);
+                a.setVisible(true);
             }
         });
         colorMenu.add(m);
@@ -673,6 +675,7 @@ public class Note extends JDialog {
         deleteNote.setForeground(c[3]);
         text.setBackground(c[4]);
         text.setForeground(c[5]);
+        text.setCaretColor(c[5]);
         text.setSelectionColor(c[6]);
         text.setSelectedTextColor(c[7]);
     }

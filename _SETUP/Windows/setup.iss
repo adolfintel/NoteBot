@@ -1,11 +1,11 @@
 [Setup]
 AppId={{3E658137-CE80-49E3-8084-FD0B0158CA31}
 AppName="NoteBot"
-AppVersion="1.3"
+AppVersion="1.4"
 AppPublisher="Federico Dossena"
-AppPublisherURL="http://adolfintel.com/?p=stickynotes/i.frag"
-AppSupportURL="http://adolfintel.com/?p=stickynotes/i.frag"
-AppUpdatesURL="http://adolfintel.com/?p=stickynotes/i.frag"
+AppPublisherURL="http://notebot.adolfintel.com/"
+AppSupportURL="http://notebot.adolfintel.com/"
+AppUpdatesURL="http://notebot.adolfintel.com/"
 DefaultDirName="{pf}\NoteBot"
 DefaultGroupName="NoteBot"
 DisableProgramGroupPage=yes

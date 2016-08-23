@@ -9,7 +9,7 @@ NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 [Binaries for other platforms](http://downloads.adolfintel.com/geth.php?r=stickynotes-bin) (Requires Java)
 
 ## Website
-[NoteBot](http://adolfintel.com/?p=stickynotes/i.frag)
+[NoteBot](http://notebot.adolfintel.com/)
 
 ## Features
 * Stick notes on your desktop
