@@ -500,5 +500,6 @@ public class Main {
                 }
             }
         }.start();
+        System.gc(); //cleanup after starting
     }
 }

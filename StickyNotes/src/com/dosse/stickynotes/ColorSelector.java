@@ -18,6 +18,8 @@ package com.dosse.stickynotes;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JLabel;
@@ -34,27 +36,31 @@ public abstract class ColorSelector extends JPanel {
 
     private static final int BUTTON_SIZE = (int) (40 * Main.SCALE);
     private static final int BUTTONS_PER_ROW = 4;
+    private static final Border NORMAL_BORDER = new LineBorder(new Color(0, 0, 0, 0), (int) (4 * Main.SCALE)), SELECTED_BORDER = new LineBorder(MetalLookAndFeel.getFocusColor(), (int) (4 * Main.SCALE));
+    private final JLabel[] buttons;
 
     public ColorSelector(Color[][] colorSchemes) {
         setLayout(null);
         int rows = (int) Math.ceil(colorSchemes.length / BUTTONS_PER_ROW);
         setPreferredSize(new Dimension(BUTTONS_PER_ROW * BUTTON_SIZE, rows * BUTTON_SIZE));
-        int x = 0, y = 0, i = 0;
-        final Border normal=new LineBorder(new Color(0, 0, 0, 0), (int) (4*Main.SCALE)),selected=new LineBorder(MetalLookAndFeel.getFocusColor(), (int) (4*Main.SCALE));
+        int x = 0, y = 0, i = 0, bi = 0;
+        buttons = new JLabel[colorSchemes.length];
         for (final Color[] c : colorSchemes) {
-            final JLabel l=new JLabel();
+            final JLabel l = new JLabel();
             l.setOpaque(true);
             l.setBackground(c[0]);
-            l.setBorder(normal);
+            l.setBorder(NORMAL_BORDER);
             l.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    l.setBorder(selected);
+                    l.setBorder(SELECTED_BORDER);
                 }
+
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    l.setBorder(normal);
+                    l.setBorder(NORMAL_BORDER);
                 }
+
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     mouseExited(e);
@@ -64,7 +70,8 @@ public abstract class ColorSelector extends JPanel {
             add(l);
             l.setLocation(x, y);
             l.setSize(new Dimension(BUTTON_SIZE, BUTTON_SIZE));
-            x+=BUTTON_SIZE;
+            buttons[bi++] = l;
+            x += BUTTON_SIZE;
             i++;
             if (i == BUTTONS_PER_ROW) {
                 i = 0;
@@ -72,8 +79,16 @@ public abstract class ColorSelector extends JPanel {
                 y += BUTTON_SIZE;
             }
         }
+        addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                for (JLabel b : buttons) {
+                    b.setBorder(NORMAL_BORDER); //this brutal workaround removes the selected border when the color menu isn't closed properly
+                }
+            }
+        });
     }
-    
+
     public abstract void onColorSchemeSelected(Color[] scheme);
 
 }
