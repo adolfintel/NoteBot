@@ -26,7 +26,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
-import javax.swing.plaf.metal.MetalLookAndFeel;
 
 /**
  *
@@ -36,7 +35,8 @@ public abstract class ColorSelector extends JPanel {
 
     private static final int BUTTON_SIZE = (int) (40 * Main.SCALE);
     private static final int BUTTONS_PER_ROW = 4;
-    private static final Border NORMAL_BORDER = new LineBorder(new Color(0, 0, 0, 0), (int) (4 * Main.SCALE)), SELECTED_BORDER = new LineBorder(MetalLookAndFeel.getFocusColor(), (int) (4 * Main.SCALE));
+    private static final Color SELECTED_COLOR=new Color(170, 170, 170);
+    private static final Border NORMAL_BORDER = new LineBorder(new Color(0, 0, 0, 0), (int) (4 * Main.SCALE)), SELECTED_BORDER = new LineBorder(SELECTED_COLOR, (int) (4 * Main.SCALE));
     private final JLabel[] buttons;
 
     public ColorSelector(Color[][] colorSchemes) {

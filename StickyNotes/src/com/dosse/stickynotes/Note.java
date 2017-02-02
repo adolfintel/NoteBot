@@ -39,6 +39,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.ResourceBundle;
 import javax.imageio.ImageIO;
 import javax.swing.GroupLayout;
@@ -212,6 +213,7 @@ public class Note extends JDialog {
     private final JButton deleteNote, newNote; //buttons to delete and create notes
     private final JScrollPane jScrollPane1; //container for the text. provides the scrollbar
     private final JTextArea text; //the actual note
+    private final UndoManager undo = new UndoManager(); //undo/redo manager (provided by swing)
     private final JPopupMenu copyPasteMenu, //menu shown when the textarea is right-clicked
             colorMenu; //menu shown when the top is right-clicked
     private final JMenuItem cut, copy, paste, delete, selectAll; //menu items inside copyPasteMenu
@@ -269,7 +271,6 @@ public class Note extends JDialog {
         text.setLineWrap(true);
         text.setWrapStyleWord(true);
         //allow undo/redo
-        final UndoManager undo = new UndoManager();
         Document doc = text.getDocument();
         doc.addUndoableEditListener(new UndoableEditListener() {
             @Override
@@ -492,6 +493,7 @@ public class Note extends JDialog {
                 Main.saveState();
             }
         });
+        colorMenu.add(new JPopupMenu.Separator());
         JMenuItem m = new JMenuItem(getLocString("ABOUT"));
         m.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         m.addActionListener(new ActionListener() {
@@ -609,6 +611,7 @@ public class Note extends JDialog {
      */
     public void setText(String s) {
         text.setText(s);
+        undo.discardAllEdits();
     }
 
     /**

@@ -2,14 +2,14 @@
 NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 
 ## Download
-[Installer for Windows](http://downloads.adolfintel.com/geth.php?r=stickynotes-win)
+[Installer for Windows](http://downloads.fdossena.com/geth.php?r=stickynotes-win)
 
-[Deb Package for Ubuntu, Debian, ...](http://downloads.adolfintel.com/geth.php?r=stickynotes-deb)
+[Deb Package for Ubuntu, Debian, ...](http://downloads.fdossena.com/geth.php?r=stickynotes-deb)
 
-[Binaries for other platforms](http://downloads.adolfintel.com/geth.php?r=stickynotes-bin) (Requires Java)
+[Binaries for other platforms](http://downloads.fdossena.com/geth.php?r=stickynotes-bin) (Requires Java)
 
 ## Website
-[NoteBot](http://notebot.adolfintel.com/)
+[NoteBot](http://notebot.fdossena.com/)
 
 ## Features
 * Stick notes on your desktop
@@ -40,7 +40,7 @@ _SETUP contains all the files used to build the Windows installer and the .deb p
 To build the Windows installer, you'll need [Inno Setup](http://www.jrsoftware.org/isinfo.php) and [launch4j](http://launch4j.sourceforge.net/).
 
 ## Screenshots
-![Screenshot](http://adolfintel.com/stickynotes/screen1.png)
+![Screenshot](http://fdossena.com/stickynotes/screen1.png)
 
 ## License
 Copyright (C) 2016 Federico Dossena
