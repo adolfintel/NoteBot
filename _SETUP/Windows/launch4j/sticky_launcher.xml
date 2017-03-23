@@ -27,12 +27,12 @@
     <opt>-Dsun.java2d.dpiaware=true</opt>
   </jre>
   <versionInfo>
-    <fileVersion>1.4.0.8</fileVersion>
-    <txtFileVersion>1.4</txtFileVersion>
+    <fileVersion>1.4.1.9</fileVersion>
+    <txtFileVersion>1.4.1</txtFileVersion>
     <fileDescription>NoteBot - A clone of Microsoft Sticky Notes</fileDescription>
     <copyright>Federico Dossena</copyright>
-    <productVersion>1.4.0.8</productVersion>
-    <txtProductVersion>1.4</txtProductVersion>
+    <productVersion>1.4.1.9</productVersion>
+    <txtProductVersion>1.4.1</txtProductVersion>
     <productName>NoteBot</productName>
     <companyName>Federico Dossena</companyName>
     <internalName>StickyNotes</internalName>

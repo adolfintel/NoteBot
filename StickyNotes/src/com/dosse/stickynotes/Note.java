@@ -39,7 +39,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Locale;
 import java.util.ResourceBundle;
 import javax.imageio.ImageIO;
 import javax.swing.GroupLayout;
@@ -301,7 +300,7 @@ public class Note extends JDialog {
         cr.registerComponent(this);
         cr.setSnapSize(new Dimension(1, 1)); //no snap
         cr.setMinimumSize(new Dimension((int) (160 * Main.SCALE), (int) (90 * Main.SCALE))); //min size is 160x90 @80dpi
-        setSize((int) (190 * Main.SCALE), (int) (170 * Main.SCALE)); //default size is 190x170 @80dpi
+        setPreferredSize(new Dimension((int) (190 * Main.SCALE), (int) (170 * Main.SCALE))); //default size is 190x170 @80dpi
         setLocation(MouseInfo.getPointerInfo().getLocation()); //new note is placed at current mouse coordinates
 
         //new note button
