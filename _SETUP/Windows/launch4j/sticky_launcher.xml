@@ -22,17 +22,15 @@
     <maxVersion></maxVersion>
     <jdkPreference>jdkOnly</jdkPreference>
     <runtimeBits>64/32</runtimeBits>
-    <initialHeapSize>2</initialHeapSize>
-    <maxHeapSize>32</maxHeapSize>
     <opt>-Dsun.java2d.dpiaware=true</opt>
   </jre>
   <versionInfo>
-    <fileVersion>1.4.1.9</fileVersion>
-    <txtFileVersion>1.4.1</txtFileVersion>
+    <fileVersion>1.4.2.10</fileVersion>
+    <txtFileVersion>1.4.2</txtFileVersion>
     <fileDescription>NoteBot - A clone of Microsoft Sticky Notes</fileDescription>
     <copyright>Federico Dossena</copyright>
-    <productVersion>1.4.1.9</productVersion>
-    <txtProductVersion>1.4.1</txtProductVersion>
+    <productVersion>1.4.2.10</productVersion>
+    <txtProductVersion>1.4.2</txtProductVersion>
     <productName>NoteBot</productName>
     <companyName>Federico Dossena</companyName>
     <internalName>StickyNotes</internalName>

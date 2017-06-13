@@ -50,7 +50,7 @@ import javax.swing.plaf.metal.MetalTheme;
  */
 public class Main {
 
-    private static final String STORAGE_PATH, BACKUP_PATH, LOCK_PATH; //these variables will contain the paths to the files used by the application, initialized below
+    private static final String STORAGE_PATH, BACKUP_PATH, BACKUP2_PATH, LOCK_PATH; //these variables will contain the paths to the files used by the application, initialized below
 
     static {
         String os = System.getProperty("os.name").toLowerCase();
@@ -82,6 +82,7 @@ public class Main {
         }
         STORAGE_PATH = home + "sticky.dat"; //main storage
         BACKUP_PATH = home + "sticky.dat.bak"; //backup in case main storage is corrupt
+        BACKUP2_PATH = home + "sticky.dat.bak.2"; //temp path for previous backup while current one is being backed up
         LOCK_PATH = home + "lock"; //lock file to prevent multiple instances of StickyNotes to run on the same storage
     }
 
@@ -108,11 +109,18 @@ public class Main {
             try {
                 File st = new File(STORAGE_PATH);
                 File bk = new File(BACKUP_PATH);
+                File bkTemp = new File(BACKUP2_PATH);
+                if (bkTemp.exists()) {
+                    bkTemp.delete();
+                }
                 if (bk.exists()) {
-                    bk.delete();
+                    bk.renameTo(bkTemp);
                 }
                 if (st.exists()) {
                     st.renameTo(bk);
+                }
+                if (bkTemp.exists()) {
+                    bkTemp.delete();
                 }
                 st = new File(STORAGE_PATH);
                 oos = new ObjectOutputStream(new FileOutputStream(st));
@@ -216,7 +224,9 @@ public class Main {
     private static boolean loadState() {
         if (!attemptLoad(new File(STORAGE_PATH))) {
             if (!attemptLoad(new File(BACKUP_PATH))) {
-                return false;
+                if (!attemptLoad(new File(BACKUP2_PATH))) {
+                    return false;
+                }
             }
         }
         return true;
