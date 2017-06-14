@@ -14,7 +14,7 @@ NoteBot is a clone of Microsoft Sticky Notes, without useless functionalities.
 ## Features
 * Stick notes on your desktop
 * Can move, resize and zoom
-* 8 different colors
+* Custom colors
 * Auto startup
 * Support for high DPI screens and touch devices
 
@@ -40,10 +40,10 @@ _SETUP contains all the files used to build the Windows installer and the .deb p
 To build the Windows installer, you'll need [Inno Setup](http://www.jrsoftware.org/isinfo.php) and [launch4j](http://launch4j.sourceforge.net/).
 
 ## Screenshots
-![Screenshot](http://fdossena.com/stickynotes/screen1.png)
+![Screenshot](http://fdossena.com/stickynotes/screen1_15.png)
 
 ## License
-Copyright (C) 2016 Federico Dossena
+Copyright (C) 2016-2017 Federico Dossena
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

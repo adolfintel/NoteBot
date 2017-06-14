@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Federico
+ * Copyright (C) 2016 Federico Dossena
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,10 +33,10 @@ import javax.swing.border.LineBorder;
  */
 public abstract class ColorSelector extends JPanel {
 
-    private static final int BUTTON_SIZE = (int) (40 * Main.SCALE);
-    private static final int BUTTONS_PER_ROW = 4;
+    private static final int BUTTON_SIZE = (int) (20 * Main.SCALE);
+    private static final int BUTTONS_PER_ROW = 8;
     private static final Color SELECTED_COLOR=new Color(170, 170, 170);
-    private static final Border NORMAL_BORDER = new LineBorder(new Color(0, 0, 0, 0), (int) (4 * Main.SCALE)), SELECTED_BORDER = new LineBorder(SELECTED_COLOR, (int) (4 * Main.SCALE));
+    private static final Border NORMAL_BORDER = new LineBorder(new Color(0, 0, 0, 0), (int) (2 * Main.SCALE)), SELECTED_BORDER = new LineBorder(SELECTED_COLOR, (int) (2 * Main.SCALE));
     private final JLabel[] buttons;
 
     public ColorSelector(Color[][] colorSchemes) {

@@ -492,28 +492,49 @@ public class Note extends JDialog {
                 Main.saveState();
             }
         });
+        //custom color selector
+        colorMenu.add(new CustomColorSelector() {
+            @Override
+            public void onColorSelected(Color c) {
+                //compute all colors from the selected color
+                float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+                hsb[1] *= 0.69f; //reduce saturation
+                if (hsb[2] < 0.55f) {
+                    //if brightness<55%, use dark settings
+                    Color internal = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2])),
+                            external = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2] + 0.1f)),
+                            bar = external,
+                            buttons = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2] + 0.3f)),
+                            lineBorder = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2] + 0.15f)),
+                            text = new Color(255, 255, 255),
+                            selectionBk = hsb[1] < 0.01f ? new Color(192, 192, 192) : new Color(Color.HSBtoRGB(hsb[0]-0.05f, hsb[1]+0.2f, 1f)), //if low saturation, use alternative selection color instead of computed one
+                            selectedText = new Color(0, 0, 0);
+                    Color[] customScheme = new Color[]{external, lineBorder, bar, buttons, internal, text, selectionBk, selectedText};
+                    setColorScheme(customScheme);
+                } else {
+                    //otherwise, use bright settings
+                    Color internal = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2])),
+                            external = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2] - 0.04f)),
+                            bar = external,
+                            buttons = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2] - 0.35f)),
+                            lineBorder = new Color(Color.HSBtoRGB(hsb[0], hsb[1], hsb[2] - 0.1f)),
+                            text = new Color(0, 0, 0),
+                            selectionBk = hsb[1] < 0.01f ? new Color(72, 72, 72) : new Color(Color.HSBtoRGB(hsb[0], hsb[1]+0.2f, 0.4f)), //if low saturation, use alternative selection color instead of computed one
+                            selectedText = new Color(255, 255, 255);
+                    Color[] customScheme = new Color[]{external, lineBorder, bar, buttons, internal, text, selectionBk, selectedText};
+                    setColorScheme(customScheme);
+                }
+                colorMenu.setVisible(false);
+                Main.saveState();
+            }
+        });
         colorMenu.add(new JPopupMenu.Separator());
         JMenuItem m = new JMenuItem(getLocString("ABOUT"));
         m.setPreferredSize(new Dimension((int) (100 * Main.SCALE), (int) (36 * Main.SCALE)));
         m.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //create about note
-                Note a = new Note();
-                a.setColorScheme(new Color[]{
-                    new Color(48, 48, 48),
-                    new Color(64, 64, 64),
-                    new Color(48, 48, 48),
-                    new Color(96, 96, 96),
-                    new Color(30, 30, 30),
-                    new Color(255, 255, 255),
-                    new Color(192, 192, 192),
-                    new Color(0, 0, 0)
-                });
-                a.setText(getLocString("ABOUT_TEXT"));
-                a.setSize((int) (300 * Main.SCALE), (int) (250 * Main.SCALE));
-                a.setTextScale(0.92f);
-                a.setVisible(true);
+                new AboutDialog(null, true).setVisible(true);
             }
         });
         colorMenu.add(m);
