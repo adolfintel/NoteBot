@@ -43,7 +43,7 @@ To build the Windows installer, you'll need [Inno Setup](http://www.jrsoftware.o
 ![Screenshot](http://fdossena.com/stickynotes/screen1_15.png)
 
 ## License
-Copyright (C) 2016-2017 Federico Dossena
+Copyright (C) 2016-2019 Federico Dossena
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
