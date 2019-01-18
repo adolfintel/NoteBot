@@ -340,7 +340,7 @@ public class Main {
     /**
      * fonts
      */
-    public static final Font BASE_FONT = loadFont("/com/dosse/stickynotes/fonts/OpenSans-Regular.ttf").deriveFont(TEXT_SIZE),
+    public static final Font BASE_FONT = loadFont("/com/dosse/stickynotes/fonts/OpenSans-Regular-Twemoji.ttf").deriveFont(TEXT_SIZE),
             SMALL_FONT = BASE_FONT.deriveFont(TEXT_SIZE_SMALL),
             BUTTON_FONT = loadFont("/com/dosse/stickynotes/fonts/OpenSans-Bold.ttf").deriveFont(BUTTON_TEXT_SIZE);
     /**

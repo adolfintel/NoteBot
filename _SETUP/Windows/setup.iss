@@ -1,7 +1,7 @@
 [Setup]
 AppId={{3E658137-CE80-49E3-8084-FD0B0158CA31}
 AppName="NoteBot"
-AppVersion="1.5"
+AppVersion="1.6"
 AppPublisher="Federico Dossena"
 AppPublisherURL="http://notebot.fdossena.com/"
 AppSupportURL="http://notebot.fdossena.com/"
