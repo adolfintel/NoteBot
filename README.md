@@ -40,7 +40,7 @@ _SETUP contains all the files used to build the Windows installer and the .deb p
 To build the Windows installer, you'll need [Inno Setup](http://www.jrsoftware.org/isinfo.php) and [launch4j](http://launch4j.sourceforge.net/).
 
 ## Screenshots
-![Screenshot](http://fdossena.com/stickynotes/screen1_15.png)
+![Screenshot](http://fdossena.com/stickynotes/screen1_16.png)
 
 ## License
 Copyright (C) 2016-2019 Federico Dossena
