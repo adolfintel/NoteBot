@@ -302,6 +302,7 @@ public class Note extends JDialog {
         cr.setMinimumSize(new Dimension((int) (160 * Main.SCALE), (int) (90 * Main.SCALE))); //min size is 160x90 @80dpi
         setPreferredSize(new Dimension((int) (190 * Main.SCALE), (int) (170 * Main.SCALE))); //default size is 190x170 @80dpi
         setLocation(MouseInfo.getPointerInfo().getLocation()); //new note is placed at current mouse coordinates
+        setResizable(false); //disallow resize by OS, such as maximize. Notes are still resizeable by the user (provided by ComponentResizer)
 
         //new note button
         newNote.setFont(new FontUIResource(Main.BUTTON_FONT));
