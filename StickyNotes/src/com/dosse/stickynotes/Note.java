@@ -45,6 +45,7 @@ import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -57,6 +58,9 @@ import javax.swing.event.UndoableEditListener;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.Document;
 import javax.swing.undo.UndoManager;
+
+import static javax.swing.JOptionPane.CLOSED_OPTION;
+import static javax.swing.JOptionPane.OK_OPTION;
 
 /**
  *
@@ -325,7 +329,9 @@ public class Note extends JDialog {
         deleteNote.setFocusPainted(false);
         deleteNote.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                Main.delete(Note.this);
+                if (confirmationCheck()) {
+                    Main.delete(Note.this);
+                }
             }
         });
 
@@ -702,6 +708,21 @@ public class Note extends JDialog {
         text.setCaretColor(c[5]);
         text.setSelectionColor(c[6]);
         text.setSelectedTextColor(c[7]);
+    }
+
+    public boolean confirmationCheck() {
+        Object[] options = { getLocString("CONFIRM_OK"), getLocString("CONFIRM_CANCEL") };
+        Object selectedValue = JOptionPane.showOptionDialog(
+                null,
+                getLocString("CONFIRM_MESSAGE"),
+                getLocString("CONFIRM_TITLE"),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,
+                options[OK_OPTION]
+        );
+        return selectedValue.equals(OK_OPTION);
     }
 
 }
